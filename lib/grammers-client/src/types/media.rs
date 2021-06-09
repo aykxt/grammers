@@ -327,7 +327,66 @@ impl Uploaded {
     }
 }
 
+#[derive(Debug)]
+pub struct FileId {
+    id: i64,
+    access_hash: i64,
+    file_reference: Vec<u8>,
+}
+
+impl From<&[u8]> for FileId {
+    fn from(value: &[u8]) -> Self {
+        Self {
+            id: i64::from_be_bytes([
+                value[0], value[1], value[2], value[3], value[4], value[5], value[6], value[7],
+            ]),
+            access_hash: i64::from_be_bytes([
+                value[8], value[9], value[10], value[11], value[12], value[13], value[14],
+                value[15],
+            ]),
+            file_reference: value[16..].to_vec(),
+        }
+    }
+}
+
+impl From<FileId> for Vec<u8> {
+    fn from(media: FileId) -> Self {
+        [
+            &media.id.to_be_bytes(),
+            &media.access_hash.to_be_bytes(),
+            media.file_reference.as_slice(),
+        ]
+        .concat()
+    }
+}
+
+impl From<FileId> for tl::enums::InputDocument {
+    fn from(file_id: FileId) -> Self {
+        Self::Document(tl::types::InputDocument {
+            id: file_id.id,
+            access_hash: file_id.access_hash,
+            file_reference: file_id.file_reference,
+        })
+    }
+}
+
 impl Media {
+    pub fn file_id(&self) -> FileId {
+        let input = self.to_input_media();
+
+        match input {
+            tl::enums::InputMedia::Document(doc) => match doc.id {
+                tl::enums::InputDocument::Empty => todo!(),
+                tl::enums::InputDocument::Document(x) => FileId {
+                    id: x.id,
+                    access_hash: x.access_hash,
+                    file_reference: x.file_reference,
+                },
+            },
+            _ => todo!(),
+        }
+    }
+
     pub(crate) fn from_raw(media: tl::enums::MessageMedia, client: Client) -> Option<Self> {
         use tl::enums::MessageMedia as M;
 

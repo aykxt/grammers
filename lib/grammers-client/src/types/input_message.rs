@@ -5,7 +5,7 @@
 // <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
-use super::attributes::Attribute;
+use super::{attributes::Attribute, media::FileId};
 use crate::types::{Media, ReplyMarkup, Uploaded};
 use grammers_tl_types as tl;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -190,6 +190,17 @@ impl InputMessage {
             }
             .into(),
         );
+        self
+    }
+
+    pub fn file_id(mut self, file_id: FileId) -> Self {
+        self.media = Some(tl::enums::InputMedia::Document(
+            tl::types::InputMediaDocument {
+                id: file_id.into(),
+                ttl_seconds: self.media_ttl,
+                query: None,
+            },
+        ));
         self
     }
 
